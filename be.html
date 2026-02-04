@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaun Behavioral Champion</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* --- CSS STYLING --- */
+        :root {
+            --primary-blue: #020b2e;
+            --secondary-purple: #4b0082;
+            --accent-gold: #d4af37;
+            --correct-green: #0f9d58;
+            --wrong-red: #db4437;
+            --text-white: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Verdana', sans-serif;
+            background: radial-gradient(circle, #1a237e 0%, #000000 100%);
+            color: var(--text-white);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* SCREEN MANAGEMENT */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* WELCOME SCREEN */
+        .welcome-title {
+            font-size: 4rem;
+            color: var(--accent-gold);
+            text-shadow: 0 0 20px #fff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .sub-title {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+
+        /* LOGO STYLING */
+        .game-logo-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            opacity: 0.3;
+            z-index: 0;
+            pointer-events: none;
+            /* REPLACE URL WITH YOUR LOGO */
+            background-image: url('logo.png');
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.5);
+            transition: opacity 0.5s;
+        }
+
+        /* SETUP SCREEN */
+        .setup-container {
+            background: rgba(0, 0, 0, 0.85);
+            padding: 40px;
+            border: 2px solid var(--accent-gold);
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 30px var(--accent-gold);
+            z-index: 10;
+        }
+
+        input {
+            display: block;
+            margin: 15px auto;
+            padding: 15px;
+            font-size: 1.2rem;
+            width: 80%;
+            border-radius: 5px;
+            border: none;
+            text-align: center;
+        }
+
+        button.start-btn {
+            background: linear-gradient(45deg, var(--secondary-purple), #800080);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            border: 2px solid var(--text-white);
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        button.start-btn:hover {
+            transform: scale(1.05);
+            background: linear-gradient(45deg, #800080, var(--secondary-purple));
+            box-shadow: 0 0 15px white;
+        }
+
+        /* GAME LAYOUT */
+        #game-ui {
+            width: 90%;
+            height: 90%;
+            display: grid;
+            grid-template-columns: 1fr 250px; 
+            grid-template-rows: auto 1fr;
+            gap: 20px;
+            z-index: 1; 
+        }
+
+        /* TOP BAR */
+        .top-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.6);
+            border-bottom: 2px solid var(--accent-gold);
+            border-radius: 10px;
+        }
+
+        .player-info {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+        }
+
+        .timer {
+            font-size: 2rem;
+            font-family: 'Courier New', monospace;
+            border: 2px solid white;
+            padding: 5px 20px;
+            border-radius: 10px;
+            background: #000;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .lifelines {
+            display: flex;
+            gap: 20px;
+        }
+
+        .lifeline-btn {
+            background: radial-gradient(#444, #111);
+            border: 2px solid var(--accent-gold);
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.8rem;
+            text-align: center;
+            position: relative;
+            font-weight: bold;
+            color: var(--accent-gold);
+            transition: 0.3s;
+        }
+
+        .lifeline-btn:hover {
+            box-shadow: 0 0 10px var(--accent-gold);
+        }
+
+        .lifeline-btn.used {
+            pointer-events: none;
+            opacity: 0.6;
+        }
+        
+        .lifeline-btn.used::after {
+            content: "✖";
+            position: absolute;
+            color: red;
+            font-size: 4rem;
+            line-height: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-shadow: 2px 2px 2px black;
+        }
+
+        /* QUESTION AREA */
+        .game-main {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; 
+            align-items: center;
+            position: relative;
+        }
+
+        .question-box {
+            background: linear-gradient(to bottom, #6a1b9a, #220033);
+            width: 100%;
+            padding: 30px;
+            text-align: center;
+            border: 3px solid white;
+            border-radius: 40px;
+            margin-bottom: 25px;
+            font-size: 1.4rem;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        .answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            z-index: 2;
+        }
+
+        .answer-btn {
+            background: linear-gradient(to bottom, #0d47a1, #000033);
+            border: 2px solid white;
+            border-radius: 30px;
+            padding: 20px;
+            color: white;
+            font-size: 1.2rem;
+            text-align: left;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+        }
+
+        .answer-btn:hover {
+            background: #1565c0;
+            border-color: var(--accent-gold);
+        }
+
+        .answer-btn.correct {
+            background: var(--correct-green);
+            animation: blink 0.5s 3;
+        }
+
+        .answer-btn.wrong {
+            background: var(--wrong-red);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: rgba(0,0,0,0.6);
+            border-left: 2px solid var(--accent-gold);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+        }
+
+        .ladder-step {
+            width: 80%;
+            padding: 15px;
+            margin: 5px 0;
+            text-align: center;
+            color: var(--accent-gold);
+            font-weight: bold;
+            border-radius: 5px;
+            font-size: 1.2rem;
+        }
+
+        .ladder-step.active {
+            background: var(--accent-gold);
+            color: black;
+            box-shadow: 0 0 15px var(--accent-gold);
+            transform: scale(1.1);
+        }
+
+        .ladder-step.passed {
+            color: white;
+            opacity: 0.5;
+        }
+
+        /* RESULT SCREEN */
+        .result-content {
+            text-align: center;
+            z-index: 10;
+        }
+        
+        h1.winner-title {
+            font-size: 3rem;
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px #fff;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            font-size: 1.5rem;
+            margin: 20px;
+            background: rgba(0,0,0,0.7);
+            padding: 30px;
+            border: 2px solid var(--accent-gold);
+            border-radius: 10px;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .option-letter {
+            color: var(--accent-gold);
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <audio id="sound-intro" src="intro.m4a" preload="auto"></audio>
+    <audio id="sound-background" src="tick.mp3" loop></audio> <audio id="sound-correct" src="correct.m4a"></audio>
+    <audio id="sound-wrong" src="Wrong.mp3"></audio>
+    <audio id="sound-win" src="win.mp3" loop></audio>
+
+    <div id="welcome-screen" class="screen active">
+        <div class="game-logo-bg" style="width: 500px; height: 500px; opacity: 1;"></div>
+        
+        <div style="z-index: 2; text-align: center;">
+            <p class="sub-title"></p>
+            <h1 class="welcome-title"><br></h1>
+            <button class="start-btn" onclick="goToSetup()">ENTER STUDIO</button>
+        </div>
+    </div>
+
+    <div id="setup-screen" class="screen">
+        <div class="game-logo-bg"></div>
+        <div class="setup-container">
+            <h1 style="color: var(--accent-gold);">Contestant Entry</h1>
+            <p>Who is challenging for the title?</p>
+            <input type="text" id="player1-name" placeholder="Name of Player 1">
+            <input type="text" id="player2-name" placeholder="Name of Player 2">
+            <button class="start-btn" onclick="startGame()">START GAME</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="game-logo-bg"></div>
+        
+        <div id="game-ui">
+            <div class="top-bar">
+                <div class="lifelines">
+                    <div class="lifeline-btn" id="lifeline-friend" onclick="useLifeline('friend')">
+                        Ask Friend
+                    </div>
+                    <div class="lifeline-btn" id="lifeline-roopa" onclick="useLifeline('roopa')">
+                        Ask Roopa Ma'am
+                    </div>
+                </div>
+                
+                <div class="player-info" id="current-player-display">Player 1</div>
+                
+                <div class="timer" id="stopwatch">00:00</div>
+            </div>
+
+            <div class="game-main">
+                <div class="question-box" id="question-text">
+                    Question goes here...
+                </div>
+                <div class="answers-grid" id="answers-container">
+                    </div>
+            </div>
+
+            <div class="sidebar" id="progress-ladder">
+                </div>
+        </div>
+    </div>
+
+    <div id="pre-result-screen" class="screen">
+        <div class="game-logo-bg" style="width: 500px; height: 500px; opacity: 1;"></div>
+        <div style="z-index: 10;">
+            <button class="start-btn" onclick="revealWinner()">SHOW RESULTS</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div class="game-logo-bg"></div>
+        <div class="result-content">
+            <h1 class="winner-title">Congratulations!</h1>
+            <h2 id="winner-name" style="font-size: 3rem; color: white; margin: 10px;">[Name]</h2>
+            <h3 style="color: var(--accent-gold);">You are the Behavioral Champion</h3>
+            
+            <div class="stats" id="final-stats">
+                </div>
+            
+            <button class="start-btn" onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        /* --- GAME DATA --- */
+        const allQuestions = [
+            // Player 1 Questions
+            { q: "Fuzzy-Trace Theory argues decisions are based on:", options: ["Exact values", "Expected utility", "Regret", "Gist meaning"], correct: 3 },
+            { q: "The first step in the priority heuristic is comparing:", options: ["Expected values", "Maximum gains", "Minimum gains", "Weighted utilities"], correct: 2 },
+            { q: "Imprecision theory explains reversals because preferences are:", options: ["Errors", "Hidden", "Vague intervals", "Frame-invariant"], correct: 2 },
+            { q: "Low trade volumes, teacher resistance, and golf performance share:", options: ["Transaction costs", "Income effects", "Loss-averse reference dependence", "Information asymmetry"], correct: 2 },
+            // Player 2 Questions
+            { q: "Market experience weakens biases when:", options: ["Sellers overprice", "Consumption rises", "Dealers trade freely", "Golfers miss putts"], correct: 2 },
+            { q: "Deviations from standard models occur because choices are evaluated:", options: ["Absolutely", "Lifetime utility", "Relative to reference points", "With foresight"], correct: 2 },
+            { q: "Limited resale markets persist because:", options: ["Regulation", "Underestimation", "Selling feels like a loss", "Quality uncertainty"], correct: 2 },
+            { q: "Decline in par–birdie gap is similar to:", options: ["Eliminating loss aversion", "Shifting reference points", "Rising marginal utility", "Transaction costs"], correct: 1 }
+        ];
+
+        /* --- STATE VARIABLES --- */
+        let players = [
+            { name: "Player 1", score: 0, time: 0, lifelines: { friend: false, roopa: false } },
+            { name: "Player 2", score: 0, time: 0, lifelines: { friend: false, roopa: false } }
+        ];
+        
+        let currentPlayerIdx = 0;
+        let currentQuestionIdx = 0;
+        let questionsPlayedThisTurn = 0;
+        let timerInterval;
+        let lastStartTime;
+
+        /* --- AUDIO SETUP --- */
+        const sounds = {
+            intro: document.getElementById('sound-intro'),
+            background: document.getElementById('sound-background'), // TICKING
+            correct: document.getElementById('sound-correct'),
+            wrong: document.getElementById('sound-wrong'),
+            win: document.getElementById('sound-win')
+        };
+
+        /* --- DOM ELEMENTS --- */
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const setupScreen = document.getElementById('setup-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const preResultScreen = document.getElementById('pre-result-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const questionText = document.getElementById('question-text');
+        const answersContainer = document.getElementById('answers-container');
+        const timerDisplay = document.getElementById('stopwatch');
+        const playerDisplay = document.getElementById('current-player-display');
+        const progressLadder = document.getElementById('progress-ladder');
+
+        /* --- FUNCTIONS --- */
+
+        function goToSetup() {
+            welcomeScreen.classList.remove('active');
+            setupScreen.classList.add('active');
+            playSound('intro');
+        }
+
+        function startGame() {
+            const p1Name = document.getElementById('player1-name').value || "Player 1";
+            const p2Name = document.getElementById('player2-name').value || "Player 2";
+            players[0].name = p1Name;
+            players[1].name = p2Name;
+
+            // Stop intro music
+            if(sounds.intro) {
+                sounds.intro.pause();
+                sounds.intro.currentTime = 0;
+            }
+
+            setupScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            initPlayerTurn();
+        }
+
+        function initPlayerTurn() {
+            questionsPlayedThisTurn = 0;
+            resetLifelineVisuals();
+            playerDisplay.innerText = players[currentPlayerIdx].name;
+            renderLadder();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            // Check if player has finished their 4 questions
+            if (questionsPlayedThisTurn >= 4) {
+                switchPlayer();
+                return;
+            }
+
+            const qData = allQuestions[currentQuestionIdx];
+            questionText.innerHTML = qData.q;
+            
+            answersContainer.innerHTML = '';
+            const letters = ['A', 'B', 'C', 'D'];
+            
+            qData.options.forEach((opt, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'answer-btn';
+                btn.innerHTML = `<span class="option-letter">${letters[index]}:</span> ${opt}`;
+                btn.onclick = () => handleAnswer(index, btn);
+                answersContainer.appendChild(btn);
+            });
+
+            updateLadderUI();
+            startTimer();
+        }
+
+        function startTimer() {
+            // START TICKING SOUND
+            playSound('background');
+
+            lastStartTime = Date.now();
+            timerInterval = setInterval(() => {
+                const now = Date.now();
+                const delta = now - lastStartTime;
+                players[currentPlayerIdx].time += delta;
+                lastStartTime = now;
+                updateTimerDisplay();
+            }, 100);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            
+            // STOP TICKING SOUND
+            if(sounds.background) {
+                sounds.background.pause();
+                sounds.background.currentTime = 0;
+            }
+        }
+
+        function updateTimerDisplay() {
+            let ms = players[currentPlayerIdx].time;
+            let totalSeconds = Math.floor(ms / 1000);
+            let minutes = Math.floor(totalSeconds / 60);
+            let seconds = totalSeconds % 60;
+            let milliseconds = Math.floor((ms % 1000) / 10);
+            timerDisplay.innerText = 
+                (minutes < 10 ? "0" + minutes : minutes) + ":" + 
+                (seconds < 10 ? "0" + seconds : seconds) + ":" +
+                (milliseconds < 10 ? "0" + milliseconds : milliseconds);
+        }
+
+        function handleAnswer(selectedIndex, btnElement) {
+            stopTimer(); // Stops ticking immediately
+            
+            const allBtns = document.querySelectorAll('.answer-btn');
+            allBtns.forEach(b => b.style.pointerEvents = 'none');
+
+            const correctIndex = allQuestions[currentQuestionIdx].correct;
+
+            if (selectedIndex === correctIndex) {
+                btnElement.classList.add('correct');
+                players[currentPlayerIdx].score++;
+                playSound('correct');
+            } else {
+                btnElement.classList.add('wrong');
+                allBtns[correctIndex].classList.add('correct');
+                playSound('wrong');
+            }
+
+            setTimeout(() => {
+                currentQuestionIdx++;
+                questionsPlayedThisTurn++;
+                loadQuestion();
+            }, 2500);
+        }
+
+        function switchPlayer() {
+            if (currentPlayerIdx === 0) {
+                // Player 1 finished -> Go to Player 2
+                currentPlayerIdx = 1;
+                alert(`${players[0].name} has finished! Pass the seat to ${players[1].name}.`);
+                initPlayerTurn();
+            } else {
+                // Player 2 finished -> Show Pre-Result Screen
+                gameScreen.classList.remove('active');
+                preResultScreen.classList.add('active');
+            }
+        }
+
+        // Called when clicking "SHOW RESULTS" button
+        function revealWinner() {
+            preResultScreen.classList.remove('active');
+            resultScreen.classList.add('active');
+            
+            // Just double check ticking is off
+            if(sounds.background) {
+                sounds.background.pause();
+                sounds.background.currentTime = 0;
+            }
+            
+            playSound('win');
+            calculateAndDisplayWinner();
+        }
+
+        function calculateAndDisplayWinner() {
+            const p1 = players[0];
+            const p2 = players[1];
+            let winner = null;
+
+            if (p1.score > p2.score) winner = p1;
+            else if (p2.score > p1.score) winner = p2;
+            else {
+                if (p1.time < p2.time) winner = p1;
+                else winner = p2;
+            }
+
+            document.getElementById('winner-name').innerText = winner.name;
+            document.getElementById('final-stats').innerHTML = `
+                <div style="margin-bottom:10px; border-bottom:1px solid gray; padding-bottom:5px;">
+                    <strong>${p1.name}</strong><br>Score: ${p1.score}/4 <br>Time: ${formatTime(p1.time)}
+                </div>
+                <div>
+                    <strong>${p2.name}</strong><br>Score: ${p2.score}/4 <br>Time: ${formatTime(p2.time)}
+                </div>
+            `;
+            triggerFireworks();
+        }
+
+        function useLifeline(type) {
+            const player = players[currentPlayerIdx];
+            if (player.lifelines[type]) {
+                alert("Lifeline already used!");
+                return;
+            }
+            let name = type === 'roopa' ? "Roopa Ma'am" : "Friend";
+            if (confirm(`Do you want to Ask ${name}?`)) {
+                player.lifelines[type] = true;
+                if(type === 'friend') document.getElementById('lifeline-friend').classList.add('used');
+                else document.getElementById('lifeline-roopa').classList.add('used');
+            }
+        }
+
+        function resetLifelineVisuals() {
+            const p = players[currentPlayerIdx];
+            const fBtn = document.getElementById('lifeline-friend');
+            const rBtn = document.getElementById('lifeline-roopa');
+            fBtn.classList.remove('used');
+            rBtn.classList.remove('used');
+            if(p.lifelines.friend) fBtn.classList.add('used');
+            if(p.lifelines.roopa) rBtn.classList.add('used');
+            updateTimerDisplay();
+        }
+
+        function renderLadder() {
+            progressLadder.innerHTML = '';
+            for (let i = 4; i >= 1; i--) {
+                const step = document.createElement('div');
+                step.className = 'ladder-step';
+                step.id = `step-${i}`;
+                step.innerText = `Q${i}`;
+                progressLadder.appendChild(step);
+            }
+        }
+
+        function updateLadderUI() {
+            const currentStepNum = questionsPlayedThisTurn + 1;
+            document.querySelectorAll('.ladder-step').forEach(s => {
+                s.classList.remove('active'); s.classList.remove('passed');
+            });
+            const activeStep = document.getElementById(`step-${currentStepNum}`);
+            if(activeStep) activeStep.classList.add('active');
+            for(let i=1; i < currentStepNum; i++) {
+                const passedStep = document.getElementById(`step-${i}`);
+                if(passedStep) passedStep.classList.add('passed');
+            }
+        }
+
+        function formatTime(ms) {
+            let totalSeconds = Math.floor(ms / 1000);
+            let mins = Math.floor(totalSeconds / 60);
+            let secs = totalSeconds % 60;
+            let mill = Math.floor((ms % 1000)/10);
+            return `${mins}m ${secs}.${mill}s`;
+        }
+
+        function playSound(type) {
+            if(sounds[type]) {
+                sounds[type].currentTime = 0;
+                sounds[type].play().catch(e => console.log("Audio requires interaction first or file missing"));
+            }
+        }
+
+        function triggerFireworks() {
+            var duration = 5 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+    </script>
+</body>
+</html>
